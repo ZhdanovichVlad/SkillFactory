@@ -1,0 +1,112 @@
+Задание 4.1
+База данных содержит список аэропортов практически всех крупных городов России. В большинстве городов есть только один аэропорт. 
+select a.city 
+from dst_project.airports a
+group by a.city
+having count(a.airport_code) > 1
+
+
+
+Задание 4.2
+Вопрос 1.
+Таблица рейсов содержит всю информацию о прошлых, текущих и запланированных рейсах. Сколько всего статусов для рейсов определено в таблице?
+select distinct f.status 
+  from dst_project.flights f
+
+Вопрос 2.
+Какое количество самолетов находятся в воздухе на момент среза в базе (статус рейса «самолёт уже вылетел и находится в воздухе»).
+select count(f.status) 
+  from dst_project.flights f 
+ where f.status = 'Departed'
+
+Вопрос 3. 
+Места определяют схему салона каждой модели. Сколько мест имеет самолет модели 773  (Boeing 777-300)?
+select count(s.seat_no) 
+  from dst_project.aircrafts a 
+  join dst_project.seats s 
+    on a.aircraft_code = s.aircraft_code 
+ where a.model = 'Boeing 777-300'
+    or a.aircraft_code = '773'
+
+Вопрос 4. 
+Сколько состоявшихся (фактических) рейсов было совершено между 1 апреля 2017 года и 1 сентября 2017 года?
+p.s Здесь и далее состоявшийся рейс означает, что он не отменён, и самолёт прибыл в пункт назначения.
+
+SELECT count(*)
+  FROM  dst_project.flights f
+ WHERE (f.actual_arrival BETWEEN '2017-04-01' AND '2017-09-01')
+   AND (f.status = 'Arrived')
+
+
+
+Задание 4.3
+Вопрос 1. Сколько всего рейсов было отменено по данным базы?
+SELECT count(*) 
+  FROM dst_project.flights f
+ where f.status = 'Cancelled' 
+
+Вопрос 2. Сколько самолетов моделей типа Boeing, Sukhoi Superjet, Airbus находится в базе авиаперевозок?
+Boeing:
+select count(distinct a.aircraft_code) 
+  from dst_project.aircrafts a 
+ where a.model like '%Boeing%'
+
+Sukhoi Superjet:
+select count(distinct a.aircraft_code) 
+  from dst_project.aircrafts a 
+ where a.model like '%Sukhoi Superjet%'
+ 
+Airbus:
+select count(distinct a.aircraft_code) 
+  from dst_project.aircrafts a 
+ where a.model like '%Airbus%'
+
+Вопрос 3. В какой части (частях) света находится больше аэропортов?
+В связи с тем, что в нашей базе представлены только две части света (Европа и Азия), посмотрим их количество и сделаем вывод. 
+select 'Europe' , count(distinct a.airport_code) 
+  from dst_project.airports a 
+ where a.timezone like '%Europe%'
+union all
+select 'Asia' , count(distinct a.airport_code) 
+  from dst_project.airports a 
+ where a.timezone like '%Asia%'
+
+
+
+Задание 4.4
+Вопрос 1. Когда был запланирован самый первый вылет, сохраненный в базе данных?
+select min(f.scheduled_departure )
+  from dst_project.flights f
+
+Вопрос 2. Сколько минут составляет запланированное время полета в самом длительном рейсе?
+Код:
+with t as (
+select max(f.scheduled_arrival - f.scheduled_departure) as flight_time
+  from dst_project.flights f
+)
+SELECT date_part('hour', t.flight_time) * 60 +
+       date_part('minute', t.flight_time) flight_time_min
+       from t
+
+Вопрос 3. Между какими аэропортами пролегает самый длительный по времени запланированный рейс?
+Код:
+SELECT distinct flight_no , departure_airport , arrival_airport 
+  from dst_project.flights f2 
+ where f2.scheduled_arrival - f2.scheduled_departure = (
+select max(f.scheduled_arrival - f.scheduled_departure) as flight_time
+  from dst_project.flights f
+)
+
+Вопрос 4. Сколько составляет средняя дальность полета среди всех самолетов в минутах? Секунды округляются в меньшую сторону (отбрасываются до минут).
+
+with t as (
+select avg(f.scheduled_arrival - f.scheduled_departure) as flight_time
+  from dst_project.flights f
+)
+SELECT date_part('hour', t.flight_time) * 60 +
+       date_part('minute', t.flight_time) flight_time_min
+       from t
+
+
+
+

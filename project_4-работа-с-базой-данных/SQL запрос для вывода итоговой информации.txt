@@ -1,0 +1,34 @@
+with seats_table as (
+select s.aircraft_code, 
+count(case when s.fare_conditions = 'Business' then s.fare_conditions end) as business_seats, 
+count(case when s.fare_conditions = 'Comfort' then s.fare_conditions end) as comfort_seats, 
+count(case when s.fare_conditions = 'Economy' then s.fare_conditions end) as economy_seats,
+count(s.fare_conditions) as total_seats
+  from dst_project.seats s 
+ group by 1
+) 
+, ticket_table as (
+select tf.flight_id , 
+count(case when tf.fare_conditions = 'Business' then tf.fare_conditions  end) as business_tickets, 
+sum(case when tf.fare_conditions = 'Business' then tf.amount end) as business_amount, 
+count(case when tf.fare_conditions = 'Comfort' then tf.fare_conditions  end) as comfort_tickets,
+sum(case when tf.fare_conditions = 'Comfort' then tf.amount end) as comfort_amount, 
+count(case when tf.fare_conditions = 'Economy' then tf.fare_conditions  end) as economy_tickets,
+sum(case when tf.fare_conditions = 'Economy' then tf.amount end) as economy_amount,
+count(tf.fare_conditions) total_tickets,
+sum(amount) total_amount
+  from dst_project.ticket_flights tf 
+ group by 1
+)
+SELECT *, 
+     date_part('ISODOW',scheduled_departure) day_of_week,
+     date_part('day',scheduled_departure) num_of_day,
+     date_part('month', scheduled_departure) num_of_month
+FROM dst_project.flights f left join seats_table s
+  on f.aircraft_code = s.aircraft_code 
+left join ticket_table tt 
+  on f.flight_id = tt.flight_id
+WHERE departure_airport = 'AAQ'
+  AND (date_trunc('month', scheduled_departure) in ('2017-01-01','2017-02-01', '2017-12-01'))
+  AND status not in ('Cancelled')
+  
